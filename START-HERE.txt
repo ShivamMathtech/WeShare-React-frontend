@@ -1,0 +1,31 @@
+WESHARE - RESPONSIVE REACT FRONTEND
+
+1. Extract the complete ZIP.
+2. Install Node.js 24 LTS (24.15 or newer) if needed.
+3. Open the weshare-frontend folder.
+
+JUST OPEN THE APP:
+  Double-click OPEN-PREBUILT-WINDOWS.bat
+  Open http://127.0.0.1:4173/ if needed.
+  No npm installation is required in this mode.
+
+EDIT THE SOURCE:
+  Run SETUP-WINDOWS.bat once.
+  Run START-WINDOWS.bat.
+  Open http://127.0.0.1:5173/
+
+COMMAND LINE:
+  npm ci
+  npm run dev
+
+TEST AND BUILD:
+  npm test
+  npm run build
+
+Keep the terminal open while using the app. Ctrl+C stops it.
+Do not open index.html directly.
+
+This is a frontend-only project. Posts, messages, uploads, and settings
+are saved in the browser. No remote messages or payments are sent.
+
+See README.md for features, structure, customization, and troubleshooting.
