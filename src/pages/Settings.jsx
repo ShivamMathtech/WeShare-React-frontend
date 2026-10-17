@@ -1,0 +1,23 @@
+import { useRef, useState } from 'react';
+import { Bell, Camera, Check, Info, ShieldCheck, Trash2 } from 'lucide-react';
+import { Avatar, Button, ErrorNotice, PageHeading, useUI } from '../components/UI';
+import { useStore } from '../state/Store';
+import { clearMedia, saveMedia } from '../lib/media';
+
+export default function Settings() {
+  const { state, dispatch, person, notify } = useStore(); const { openModal, go } = useUI(); const [draft, setDraft] = useState(state.profile), [error, setError] = useState(''), [busy, setBusy] = useState(false); const picker = useRef();
+  const field = name => ({ value: draft[name] || '', onChange: e => setDraft(d => ({ ...d, [name]: e.target.value })) });
+  function save(e) {
+    e.preventDefault(); setError('');
+    if (!draft.name.trim()) return setError('Please add your name.');
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(draft.handle)) return setError('Your username must be 3–30 letters, numbers, or underscores.');
+    let website = draft.website.trim();
+    if (website) { try { const parsed = new URL(website); if (!['https:', 'http:'].includes(parsed.protocol)) throw new Error(); } catch { return setError('Enter a full website address starting with https:// or http://.'); } }
+    dispatch({ type: 'PROFILE_UPDATE', payload: { ...draft, name: draft.name.trim(), website } }); notify('Profile updated. Looking good!');
+  }
+  async function photo(e) {
+    const file = e.target.files?.[0]; e.target.value = ''; if (!file) return; setBusy(true);
+    try { const avatar = await saveMedia(file, { kind: 'image', maxMB: 5 }); setDraft(d => ({ ...d, avatar })); dispatch({ type: 'PROFILE_UPDATE', payload: { avatar } }); notify('Profile photo updated.'); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  }
+  return <><PageHeading title="Make yourself at home" subtitle="A few details to make WeShare yours."/><div className="settings-layout"><form className="panel settings-form" onSubmit={save}><div className="panel-heading"><h2>Your profile</h2><ShieldCheck size={18}/></div><div className="profile-photo-edit"><Avatar person={{ ...person('me'), avatar: draft.avatar }} size={72}/><div><Button variant="soft" disabled={busy} onClick={() => picker.current.click()}><Camera size={16}/>{busy ? 'Saving…' : 'Change photo'}</Button><small>PNG, JPEG, WebP, or GIF · up to 5 MB</small></div><input ref={picker} type="file" className="sr-only" aria-label="Change profile photo" tabIndex={-1} accept="image/png,image/jpeg,image/webp,image/gif" onChange={photo}/></div><div className="form-row"><label className="field">Full name<input {...field('name')} required maxLength={60}/></label><label className="field">Username<input {...field('handle')} required minLength={3} maxLength={30}/></label></div><label className="field">What do you do?<input {...field('role')} maxLength={80}/></label><label className="field">Bio<textarea {...field('bio')} rows={3} maxLength={300}/></label><div className="form-row"><label className="field">Location<input {...field('location')} maxLength={80}/></label><label className="field">Website<input {...field('website')} placeholder="https://your-portfolio.com" maxLength={200}/></label></div><ErrorNotice>{error}</ErrorNotice><Button type="submit" disabled={busy}><Check size={16}/>Save profile</Button></form><div><section className="panel preference-panel"><div className="panel-heading"><h2>Preferences</h2><Bell size={17}/></div><label className="toggle-field"><span><strong>Activity indicators</strong><small>Show sample online status in the inbox.</small></span><input type="checkbox" checked={state.settings.activityVisible} onChange={e => dispatch({ type: 'SETTINGS_UPDATE', payload: { activityVisible: e.target.checked } })}/></label></section><section className="panel privacy-panel"><Info size={22}/><h2>Your space, on this device</h2><p>Posts, messages, and settings stay in this browser. Uploaded files are also stored here. Clearing browser data removes them.</p><p>This is a frontend demo with sample people and content. Accounts, delivery of messages, and payments are not connected.</p></section><section className="panel reset-panel"><h2>Fresh start</h2><p>Restore sample content and remove your local posts, messages, and uploads.</p><Button variant="danger" onClick={() => openModal('confirm', { title: 'Reset your local demo?', text: 'This permanently removes your WeShare posts, messages, settings, and uploads from this browser. Other websites are not affected.', confirm: 'Reset WeShare', action: async () => { await clearMedia(); dispatch({ type: 'RESET' }); notify('WeShare has been reset.'); go('feed'); } })}><Trash2 size={16}/>Reset local data</Button></section></div></div></>;
+}

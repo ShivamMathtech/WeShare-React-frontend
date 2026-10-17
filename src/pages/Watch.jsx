@@ -1,0 +1,18 @@
+import { useRef, useState } from 'react';
+import { Bookmark, Heart, Play, Share2 } from 'lucide-react';
+import { Art, Avatar, Button, Empty, IconButton, PageHeading } from '../components/UI';
+import { useStore } from '../state/Store';
+import { videos } from '../state/data';
+import { copyText } from '../lib/format';
+
+export function VideoCard({ video }) {
+  const { state, person, toggle, notify } = useStore(); const player = useRef(null); const [started, setStarted] = useState(false), [error, setError] = useState('');
+  const liked = state.likedVideos.includes(video.id), saved = state.savedVideos.includes(video.id), following = state.following.includes(video.author);
+  async function play() { setStarted(true); try { await player.current.play(); } catch { setError('This browser could not play the video. Try opening the included MP4 file directly.'); } }
+  return <article className="panel video-card"><header className="post-header"><div className="person-line"><Avatar person={person(video.author)} size={37}/><span><strong>{person(video.author).name}</strong><small>Creative inspiration</small></span></div><Button variant="text" onClick={() => toggle('following', video.author)}>{following ? 'Following' : '+ Follow'}</Button></header><div className="video-stage"><video ref={player} src={`${import.meta.env.BASE_URL}${video.src}`} controls={started} playsInline preload="metadata" aria-label={video.title} onError={() => setError('Video unavailable. Make sure the public/assets folder is included.')} onEnded={() => setStarted(false)}/>{!started && <button className="video-cover" aria-label={`Play ${video.title}`} onClick={play}><Art name={video.art} alt={video.title}/><span className="play-circle"><Play size={26} fill="currentColor"/></span><span className="video-duration">{video.duration}</span></button>}</div>{error && <p role="alert" className="error-notice">{error}</p>}<div className="video-description"><div><h2>{video.title}</h2><small>{video.views} sample views</small></div><p>{video.description}</p><p className="video-tags">{video.tags}</p></div><div className="post-actions"><button aria-pressed={liked} aria-label={`${liked ? 'Unlike' : 'Like'} ${video.title}`} className={liked ? 'liked' : ''} onClick={() => toggle('likedVideos', video.id)}><Heart size={16} fill={liked ? 'currentColor' : 'none'}/>{video.likes + Number(liked)} Likes</button><button onClick={() => copyText(`${location.href.split('#')[0]}#watch`).then(() => notify('Video page link copied.')).catch(e => notify(e.message, 'error'))}><Share2 size={16}/>Share</button><IconButton label={saved ? 'Remove from watchlist' : 'Save to watchlist'} className={`save-post ${saved ? 'blue-text' : ''}`} aria-pressed={saved} onClick={() => toggle('savedVideos', video.id)}><Bookmark size={17} fill={saved ? 'currentColor' : 'none'}/></IconButton></div></article>;
+}
+export default function Watch() {
+  const { state } = useStore(); const [tab, setTab] = useState('For you');
+  const list = videos.filter(v => tab === 'For you' || tab === 'Following' && state.following.includes(v.author) || tab === 'Saved' && state.savedVideos.includes(v.id));
+  return <><PageHeading title="Videos for you" subtitle="A fresh perspective, one play at a time."/><div className="pills space-bottom">{['For you', 'Following', 'Saved'].map(t => <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>{t}</button>)}</div>{list.map(video => <VideoCard video={video} key={video.id}/>)}{!list.length && <div className="panel"><Empty icon={Play} title="Nothing here just yet">Follow a creator or save a video to see it here.</Empty></div>}</>;
+}
